@@ -76,7 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title=active_settings.app_name,
         version="0.1.0",
         description=(
-            "Paper-trading only MVP for researching sports prediction markets. "
+            "Paper-trading app for researching sports prediction markets. "
             "No wallet signing or real-money execution is performed."
         ),
         lifespan=lifespan,

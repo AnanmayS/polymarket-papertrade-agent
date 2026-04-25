@@ -20,7 +20,7 @@ def midpoint_probability(best_bid: float, best_ask: float, last_trade_price: flo
 
 
 def edge_from_probabilities(fair_probability: float, market_probability: float) -> float:
-    """Simple edge estimate used throughout the MVP."""
+    """Simple edge estimate used throughout the app."""
 
     return fair_probability - market_probability
 

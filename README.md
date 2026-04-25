@@ -1,6 +1,6 @@
 # Polymarket Paper Trading Agent
 
-Production-style paper-trading system for sports prediction markets. The app scans live Polymarket sports markets, estimates fair probability, enforces bankroll-aware risk controls, simulates paper trades with fees and slippage, and tracks portfolio performance in a clean dashboard.
+Paper-trading system for sports prediction markets. The app scans live Polymarket sports markets, estimates fair probability, enforces bankroll-aware risk controls, simulates paper trades with fees and slippage, and tracks portfolio performance in a dashboard.
 
 No real-money trading is performed. No wallet signing or on-chain execution is included. Paper-trading results do not imply live profitability.
 
@@ -23,7 +23,7 @@ No real-money trading is performed. No wallet signing or on-chain execution is i
 - Tooling: ruff, black, eslint, prettier
 - Infra: Docker Compose
 
-## Demo views
+## Screenshots
 
 - [Portfolio Placeholder](docs/screenshots/portfolio-placeholder.svg)
 - [Scanner Placeholder](docs/screenshots/scanner-placeholder.svg)
@@ -70,7 +70,7 @@ app/
 
 Key services:
 
-- `ScannerService`: fetches and filters live or demo markets, then stores `Market` and `MarketSnapshot`.
+- `ScannerService`: fetches and filters live or sample markets, then stores `Market` and `MarketSnapshot`.
 - `SignalService`: builds engineered features and emits heuristic or ML-backed `Signal` records.
 - `RiskService`: approves or blocks trades and records `RiskDecision` reasons.
 - `PaperExecutionService`: simulates fills and creates `Trade` and `Position` records.
@@ -158,7 +158,7 @@ Docker Compose runs PostgreSQL, Redis, FastAPI, and the frontend.
 
 ## Seed data and backfill
 
-Demo data lives in `backend/app/data/demo_markets.json`.
+Sample data lives in `backend/app/data/demo_markets.json`.
 
 To seed markets and run one paper-trading cycle:
 
@@ -218,7 +218,7 @@ Workflow file: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - The ML mode is intentionally lightweight and improves only as settled paper-trading history grows.
 - Public Polymarket fields may change over time.
 - Fill quality, fees, and slippage are simplified approximations.
-- This project is for research and engineering demonstration, not for claiming alpha.
+- This project is for research and experimentation, not for claiming alpha.
 
 ## Future real-execution roadmap
 
@@ -229,13 +229,3 @@ Workflow file: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - Add Redis caching and task queues for heavier workloads.
 - Add richer feature stores and optional sentiment adapters.
 - Add offline evaluation, model versioning, and walk-forward validation.
-
-## Resume project description
-
-Built a production-style paper-trading system for sports prediction markets using FastAPI, React, PostgreSQL, and SQLAlchemy. The platform scans live Polymarket markets, ranks opportunities, estimates fair probability with heuristic and ML-ready pipelines, enforces bankroll-aware risk controls, simulates fee and slippage aware execution, and surfaces portfolio analytics plus post-trade postmortems in a clean dashboard.
-
-## Resume bullet options
-
-- Built a paper-trading prediction market agent that scanned live sports markets, generated fair-probability trade signals, and enforced bankroll-aware risk controls across `[N]+` tracked markets.
-- Engineered a FastAPI and React platform for market ranking, simulated execution, and post-trade analytics with structured logging and tested scan-to-settlement workflows.
-- Implemented feature pipelines and heuristic or ML probability models to compare fair probability against market-implied odds, adding fee-aware PnL simulation and postmortem reporting for paper trades.

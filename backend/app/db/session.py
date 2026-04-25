@@ -24,7 +24,7 @@ def build_session_factory(database_url: str) -> sessionmaker[Session]:
 
 
 def init_database(database_url: str) -> None:
-    """Create tables for the MVP schema."""
+    """Create tables for the application schema."""
 
     engine = build_engine(database_url)
     Base.metadata.create_all(bind=engine)

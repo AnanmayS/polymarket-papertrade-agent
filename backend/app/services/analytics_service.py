@@ -95,7 +95,7 @@ class AnalyticsService:
         ]
         per_market = sorted(per_market, key=lambda item: item.realized_pnl, reverse=True)
 
-        # pandas is intentionally used here for recruiter-visible analytics tooling.
+        # pandas keeps the portfolio analytics logic concise and easy to inspect.
         if settled:
             _ = pd.DataFrame(
                 [{"created_at": trade.created_at, "pnl": trade.realized_pnl} for trade in settled]

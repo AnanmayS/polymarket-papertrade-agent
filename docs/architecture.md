@@ -17,5 +17,4 @@ flowchart LR
     K --> L[React Dashboard]
 ```
 
-The MVP is intentionally paper-trading only. The execution boundary is isolated behind `PaperExecutionService`, which makes it straightforward to add a real execution adapter later without rewriting the scanner, signal engine, or risk layer.
-
+The app is intentionally paper-trading only. The execution boundary is isolated behind `PaperExecutionService`, which makes it straightforward to add a real execution adapter later without rewriting the scanner, signal engine, or risk layer.
