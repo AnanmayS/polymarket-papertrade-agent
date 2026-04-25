@@ -3,12 +3,16 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_app_settings, get_db
+from app.api.deps import get_app_settings, get_db, require_engine_control
 from app.core.config import Settings
 from app.schemas.engine import EngineActionResponse
 from app.services.engine_service import EngineService
 
-router = APIRouter(prefix="/engine", tags=["engine"])
+router = APIRouter(
+    prefix="/engine",
+    tags=["engine"],
+    dependencies=[Depends(require_engine_control)],
+)
 
 
 @router.post("/run-scan", response_model=EngineActionResponse)

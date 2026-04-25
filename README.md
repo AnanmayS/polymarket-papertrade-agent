@@ -31,6 +31,7 @@ No real-money trading is performed. No wallet signing or on-chain execution is i
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md).
+Deployment notes: [docs/deployment.md](docs/deployment.md).
 
 ```mermaid
 flowchart LR
@@ -155,6 +156,30 @@ docker compose -f infra/docker-compose.yml up --build
 ```
 
 Docker Compose runs PostgreSQL, Redis, FastAPI, and the frontend.
+
+## Deployment
+
+Recommended production layout:
+
+- Vercel for `frontend/`
+- Render, Railway, or Fly.io for the FastAPI backend
+- Managed Postgres for persistence
+- External cron or scheduled job for `backend/scripts/run_cycle_once.py`
+
+Production safety defaults:
+
+- `SCHEDULER_ENABLED=false`
+- `AUTO_RUN_ON_STARTUP=false`
+- `ENGINE_CONTROL_TOKEN` required when `APP_ENV=production`
+
+Example one-shot cycle trigger:
+
+```bash
+curl -X POST https://your-backend.example.com/engine/run-cycle \
+  -H "Authorization: Bearer $ENGINE_CONTROL_TOKEN"
+```
+
+See [docs/deployment.md](docs/deployment.md) for the full setup.
 
 ## Seed data and backfill
 
