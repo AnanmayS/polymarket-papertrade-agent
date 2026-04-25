@@ -47,3 +47,13 @@ def test_health_hides_database_url(client) -> None:
     payload = response.json()
     assert "database_url" not in payload
     assert payload["database_backend"] == "sqlite"
+
+
+def test_render_postgres_connection_string_is_normalized() -> None:
+    settings = Settings(database_url="postgresql://user:pass@db.example.com:5432/app")
+    assert settings.active_database_url == "postgresql+psycopg://user:pass@db.example.com:5432/app"
+
+
+def test_legacy_postgres_scheme_is_normalized() -> None:
+    settings = Settings(database_url="postgres://user:pass@db.example.com:5432/app")
+    assert settings.active_database_url == "postgresql+psycopg://user:pass@db.example.com:5432/app"

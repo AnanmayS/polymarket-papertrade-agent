@@ -98,6 +98,10 @@ class Settings(BaseSettings):
         if database_url.startswith("sqlite:///./"):
             relative_path = database_url.removeprefix("sqlite:///./")
             return f"sqlite:///{PROJECT_ROOT / relative_path}"
+        if database_url.startswith("postgres://"):
+            return database_url.replace("postgres://", "postgresql+psycopg://", 1)
+        if database_url.startswith("postgresql://") and "+" not in database_url.partition("://")[0]:
+            return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
         return database_url
 
     @property
