@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" rx="28" fill="#F6F3EA"/>
+  <rect x="36" y="36" width="280" height="648" rx="28" fill="#16202A"/>
+  <rect x="352" y="36" width="892" height="120" rx="24" fill="#FFFDF7" stroke="#D6D3D1"/>
+  <rect x="352" y="184" width="892" height="500" rx="24" fill="#FFFDF7" stroke="#D6D3D1"/>
+  <line x1="388" y1="278" x2="1208" y2="278" stroke="#E7E5E4" stroke-width="2"/>
+  <line x1="388" y1="350" x2="1208" y2="350" stroke="#E7E5E4" stroke-width="2"/>
+  <line x1="388" y1="422" x2="1208" y2="422" stroke="#E7E5E4" stroke-width="2"/>
+  <line x1="388" y1="494" x2="1208" y2="494" stroke="#E7E5E4" stroke-width="2"/>
+  <line x1="388" y1="566" x2="1208" y2="566" stroke="#E7E5E4" stroke-width="2"/>
+  <text x="388" y="104" fill="#16202A" font-family="Arial, sans-serif" font-size="30" font-weight="700">Market Scanner Placeholder</text>
+  <text x="388" y="136" fill="#667085" font-family="Arial, sans-serif" font-size="18">Replace with a real dashboard screenshot after the frontend is running.</text>
+</svg>
+
