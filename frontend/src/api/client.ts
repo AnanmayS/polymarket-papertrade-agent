@@ -50,6 +50,41 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 
 export const isApiConfigured = () => Boolean(BASE_URL);
 
+async function fetchSameOriginJson<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+
+  try {
+    response = await fetch(path, {
+      headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+      ...init,
+    });
+  } catch (error) {
+    throw new Error(
+      `Network error reaching ${path}. ${error instanceof Error ? error.message : ""}`.trim(),
+    );
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      `Request failed: ${response.status} ${response.statusText}`,
+      response.status,
+    );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `Expected JSON from ${path} but got ${contentType || "unknown content-type"}.`,
+    );
+  }
+
+  return (await response.json()) as T;
+}
+
 export const api = {
   portfolio: () => fetchJson<import("../types/api").Portfolio>("/portfolio"),
   markets: () => fetchJson<import("../types/api").Market[]>("/markets/active"),
@@ -58,8 +93,13 @@ export const api = {
   postmortems: () => fetchJson<import("../types/api").Postmortem[]>("/postmortems"),
   settings: () => fetchJson<import("../types/api").RiskSettings>("/settings"),
   runCycle: () =>
-    fetchJson<{ status?: string; message?: string; notes?: string[] } | null>(
-      "/engine/run-cycle",
-      { method: "POST" },
-    ),
+    import.meta.env.PROD
+      ? fetchSameOriginJson<{ status?: string; message?: string; notes?: string[] } | null>(
+          "/api/run-cycle",
+          { method: "POST" },
+        )
+      : fetchJson<{ status?: string; message?: string; notes?: string[] } | null>(
+          "/engine/run-cycle",
+          { method: "POST" },
+        ),
 };
