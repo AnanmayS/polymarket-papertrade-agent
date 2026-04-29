@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from pprint import pprint
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging

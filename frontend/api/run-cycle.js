@@ -1,4 +1,8 @@
 export default async function handler(request, response) {
+  if (process.env.ENABLE_PUBLIC_ENGINE_CONTROLS !== "true") {
+    return response.status(404).json({ detail: "Not found" });
+  }
+
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
     return response.status(405).json({ detail: "Method not allowed" });

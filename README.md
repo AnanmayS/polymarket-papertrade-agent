@@ -171,6 +171,8 @@ Production safety defaults:
 - `SCHEDULER_ENABLED=false`
 - `AUTO_RUN_ON_STARTUP=false`
 - `ENGINE_CONTROL_TOKEN` required when `APP_ENV=production`
+- Frontend engine controls disabled by default with
+  `VITE_ENABLE_ENGINE_CONTROLS=false` and `ENABLE_PUBLIC_ENGINE_CONTROLS=false`
 
 See [docs/deployment.md](docs/deployment.md) for the full setup.
 

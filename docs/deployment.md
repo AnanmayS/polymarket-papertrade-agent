@@ -76,7 +76,15 @@ Set this on the frontend:
 
 ```bash
 VITE_API_BASE_URL=https://your-backend.example.com
+VITE_ENABLE_ENGINE_CONTROLS=false
+ENABLE_PUBLIC_ENGINE_CONTROLS=false
 ```
+
+Keep the public dashboard read-only by leaving engine controls disabled. If
+`VITE_ENABLE_ENGINE_CONTROLS=true` and `ENABLE_PUBLIC_ENGINE_CONTROLS=true`, any
+visitor can trigger `/api/run-cycle`, which mutates the paper portfolio and can
+consume backend/API resources. Use the Railway cron service for automatic cycles
+instead.
 
 ## Triggering a cycle
 
@@ -93,6 +101,8 @@ This is the recommended Railway cron path because the task starts, completes one
 
 - `/health` no longer exposes the full database URL.
 - Engine control routes require a token in production.
+- The frontend run-cycle proxy is disabled by default, so public visitors cannot
+  trigger agent cycles from the dashboard.
 - Public read routes remain open for the dashboard.
 - Managed Postgres URLs like `postgresql://...` and `postgres://...` are normalized to `postgresql+psycopg://...` by the backend config for SQLAlchemy compatibility.
 - This project is still paper-trading only. Deploying it will not place live Polymarket orders.

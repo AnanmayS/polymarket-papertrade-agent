@@ -29,6 +29,8 @@ function fmtPct(value: number | undefined | null) {
 export function AppShell() {
   const location = useLocation();
   const configured = isApiConfigured();
+  const engineControlsEnabled =
+    import.meta.env.DEV || import.meta.env.VITE_ENABLE_ENGINE_CONTROLS === "true";
   const { data: portfolio, refetch } = useApi(
     () => (configured ? api.portfolio() : Promise.resolve(null)),
     [configured],
@@ -59,7 +61,7 @@ export function AppShell() {
             <Stat label="Win rate" value={fmtPct(winRate)} />
           </div>
 
-          <EngineControls onRan={refetch} />
+          {engineControlsEnabled ? <EngineControls onRan={refetch} /> : null}
         </div>
       </header>
 
