@@ -23,7 +23,22 @@ def _derive_event_slug(market: Market | None) -> str | None:
         return str(event_slug)
     if str(metadata.get("sports_market_type") or "").lower() == "moneyline":
         return None
+    derived_more_markets_slug = _derive_more_markets_slug(market.slug)
+    if derived_more_markets_slug:
+        return derived_more_markets_slug
     return market.slug or None
+
+
+def _derive_more_markets_slug(market_slug: str | None) -> str | None:
+    if not market_slug:
+        return None
+
+    for separator in ("-spread-", "-total-"):
+        if separator in market_slug:
+            return f"{market_slug.split(separator, maxsplit=1)[0]}-more-markets"
+    if market_slug.endswith("-btts"):
+        return f"{market_slug.removesuffix('-btts')}-more-markets"
+    return None
 
 
 def _market_url(market: Market | None) -> str | None:

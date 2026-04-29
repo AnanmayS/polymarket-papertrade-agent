@@ -90,3 +90,29 @@ def test_trades_hide_unconfirmed_moneyline_links(client, db_session, monkeypatch
     assert response.status_code == 200
     payload = response.json()
     assert payload[0]["market_url"] is None
+
+
+def test_trades_derive_more_markets_event_link_for_spread(client, db_session, monkeypatch):
+    market = _create_market(
+        db_session,
+        external_id="1829043",
+        slug="lib-lan-lqu-2026-04-28-spread-home-1pt5",
+        question="Spread: CA Lanus (-1.5)",
+        metadata_json={"sports_market_type": "spreads"},
+    )
+    _create_trade(db_session, market.id)
+
+    monkeypatch.setattr(
+        PolymarketClient,
+        "fetch_active_event_slug_map",
+        lambda self: {},
+    )
+
+    response = client.get("/trades")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert (
+        payload[0]["market_url"]
+        == "https://polymarket.com/event/lib-lan-lqu-2026-04-28-more-markets"
+    )
