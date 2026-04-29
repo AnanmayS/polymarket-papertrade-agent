@@ -223,12 +223,21 @@ class PolymarketClient:
     def extract_resolved_outcome(self, item: dict[str, Any]) -> bool | None:
         """Infer the winning YES/NO side from resolved market data when possible."""
 
-        demo_outcome = item.get("metadata_json", {}).get("demo_final_outcome")
+        metadata = item.get("metadata_json", {})
+        demo_outcome = metadata.get("demo_final_outcome")
         if demo_outcome is not None:
             return bool(demo_outcome)
 
-        outcomes = _parse_list(item.get("outcomes"))
-        prices = [_as_float(price, -1.0) for price in _parse_list(item.get("outcomePrices"))]
+        outcomes = _parse_list(item.get("outcomes") or metadata.get("outcomes"))
+        prices = [
+            _as_float(price, -1.0)
+            for price in _parse_list(
+                item.get("outcomePrices")
+                or item.get("outcome_prices")
+                or metadata.get("outcomePrices")
+                or metadata.get("outcome_prices")
+            )
+        ]
         if len(outcomes) < 2 or len(prices) < 2:
             return None
 

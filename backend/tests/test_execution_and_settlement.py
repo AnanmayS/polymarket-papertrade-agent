@@ -4,6 +4,7 @@ from app.models.market import Market
 from app.models.risk import RiskDecision
 from app.models.signal import Signal
 from app.services.execution_service import PaperExecutionService
+from app.services.polymarket_client import PolymarketClient
 from app.services.settlement_service import SettlementService
 from app.utils.time import utc_now
 
@@ -90,3 +91,33 @@ def test_settlement_realizes_pnl_and_creates_postmortem(db_session, test_setting
     refreshed = db_session.get(type(trade), trade.id)
     assert refreshed.status == "settled"
     assert refreshed.realized_pnl != 0
+
+
+def test_resolved_outcome_handles_normalized_yes_no_prices(test_settings) -> None:
+    client = PolymarketClient(test_settings)
+
+    outcome = client.extract_resolved_outcome(
+        {
+            "metadata_json": {
+                "outcomes": ["Yes", "No"],
+                "outcome_prices": ["0.9995", "0.0005"],
+            }
+        }
+    )
+
+    assert outcome is True
+
+
+def test_resolved_outcome_handles_normalized_no_winner(test_settings) -> None:
+    client = PolymarketClient(test_settings)
+
+    outcome = client.extract_resolved_outcome(
+        {
+            "metadata_json": {
+                "outcomes": ["Yes", "No"],
+                "outcome_prices": ["0.0005", "0.9995"],
+            }
+        }
+    )
+
+    assert outcome is False
