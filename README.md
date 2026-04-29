@@ -23,10 +23,23 @@ No real-money trading is performed. No wallet signing or on-chain execution is i
 - Tooling: ruff, black, eslint, prettier
 - Infra: Docker Compose
 
+## Live app
+
+- Main dashboard: [https://polymarket-papertrade-agent-frontend.vercel.app](https://polymarket-papertrade-agent-frontend.vercel.app)
+
 ## Screenshots
 
-- [Portfolio Placeholder](docs/screenshots/portfolio-placeholder.svg)
-- [Scanner Placeholder](docs/screenshots/scanner-placeholder.svg)
+### Overview
+
+[![Overview dashboard](docs/screenshots/overview.png)](https://polymarket-papertrade-agent-frontend.vercel.app)
+
+### Trade ideas
+
+[![Trade ideas page](docs/screenshots/trade-ideas.png)](https://polymarket-papertrade-agent-frontend.vercel.app/ideas)
+
+### Paper trades
+
+[![Paper trades page](docs/screenshots/paper-trades.png)](https://polymarket-papertrade-agent-frontend.vercel.app/trades)
 
 ## Architecture
 
