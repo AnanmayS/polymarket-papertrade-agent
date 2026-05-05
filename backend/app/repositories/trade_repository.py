@@ -22,8 +22,11 @@ class TradeRepository:
         self.session.flush()
         return trade
 
-    def list_trades(self, limit: int = 200) -> list[Trade]:
-        stmt = select(Trade).order_by(desc(Trade.created_at)).limit(limit)
+    def list_trades(self, limit: int = 200, statuses: tuple[str, ...] | None = None) -> list[Trade]:
+        stmt = select(Trade)
+        if statuses is not None:
+            stmt = stmt.where(Trade.status.in_(statuses))
+        stmt = stmt.order_by(desc(Trade.created_at)).limit(limit)
         return list(self.session.scalars(stmt))
 
     def get_trade(self, trade_id: int) -> Trade | None:
@@ -35,6 +38,13 @@ class TradeRepository:
 
     def get_position_by_market(self, market_id: int) -> Position | None:
         stmt = select(Position).where(Position.market_id == market_id)
+        return self.session.scalar(stmt)
+
+    def get_open_position_by_market(self, market_id: int) -> Position | None:
+        stmt = select(Position).where(
+            Position.market_id == market_id,
+            Position.status == "open",
+        )
         return self.session.scalar(stmt)
 
     def upsert_position(self, payload: dict) -> Position:

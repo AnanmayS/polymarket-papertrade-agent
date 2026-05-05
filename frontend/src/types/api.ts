@@ -64,6 +64,7 @@ export type Trade = {
   market_url?: string | null;
   side: string;
   status: string;
+  result: "won" | "lost" | null;
   stake: number;
   quantity: number;
   fill_price: number;

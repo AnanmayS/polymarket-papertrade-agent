@@ -22,7 +22,7 @@ function acceptedSummary(trade: {
   return `Accepted with ${pct(trade.entry_edge)} edge, ${pct(trade.confidence)} confidence, and ${usd(trade.stake)} planned stake.`;
 }
 
-type Filter = "all" | "open" | "settled";
+type Filter = "all" | "open" | "settled" | "won" | "lost";
 
 export function TradesPage() {
   const { data, loading, error } = useApi(() => api.trades(), []);
@@ -30,9 +30,12 @@ export function TradesPage() {
 
   const trades = useMemo(() => {
     if (!data) return [];
-    if (filter === "all") return data;
-    if (filter === "open") return data.filter((trade) => !trade.settled_at);
-    return data.filter((trade) => Boolean(trade.settled_at));
+    if (filter === "all") {
+      return data.filter((trade) => trade.status === "opened" || trade.status === "settled");
+    }
+    if (filter === "open") return data.filter((trade) => trade.status === "opened");
+    if (filter === "settled") return data.filter((trade) => trade.status === "settled");
+    return data.filter((trade) => trade.status === "settled" && trade.result === filter);
   }, [data, filter]);
 
   return (
@@ -40,7 +43,7 @@ export function TradesPage() {
       title="Paper trades"
       action={
         <div className="flex gap-1 rounded-md bg-neutral-900 p-0.5 text-xs">
-          {(["all", "open", "settled"] as Filter[]).map((value) => (
+          {(["all", "open", "settled", "won", "lost"] as Filter[]).map((value) => (
             <button
               key={value}
               onClick={() => setFilter(value)}
@@ -90,6 +93,15 @@ export function TradesPage() {
                       : trade.side;
                 const sideTone =
                   sideLabel === "yes" ? "positive" : sideLabel === "no" ? "info" : "neutral";
+                const statusLabel = trade.result ?? trade.status;
+                const statusTone =
+                  trade.result === "won"
+                    ? "positive"
+                    : trade.result === "lost"
+                      ? "negative"
+                      : trade.status === "opened"
+                        ? "info"
+                        : "neutral";
 
                 return (
                   <tr key={trade.id} className="hover:bg-neutral-900/50">
@@ -113,9 +125,7 @@ export function TradesPage() {
                       <StatusPill tone={sideTone}>{sideLabel}</StatusPill>
                     </Td>
                     <Td>
-                      <StatusPill tone={trade.settled_at ? "neutral" : "info"}>
-                        {trade.status}
-                      </StatusPill>
+                      <StatusPill tone={statusTone}>{statusLabel}</StatusPill>
                     </Td>
                     <Td align="right">{usd(trade.stake)}</Td>
                     <Td align="right">{trade.fill_price.toFixed(3)}</Td>

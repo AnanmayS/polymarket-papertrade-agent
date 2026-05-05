@@ -12,6 +12,8 @@ from app.services.polymarket_client import PolymarketClient
 
 router = APIRouter(tags=["trades"])
 
+VISIBLE_TRADE_STATUSES = ("opened", "settled")
+
 
 def _derive_event_slug(market: Market | None) -> str | None:
     if market is None:
@@ -46,6 +48,18 @@ def _market_url(market: Market | None) -> str | None:
     if not slug:
         return None
     return f"https://polymarket.com/event/{slug}"
+
+
+def _trade_result(trade) -> str | None:
+    if trade.status != "settled" and trade.settled_at is None:
+        return None
+    if trade.resolution_value is None:
+        if trade.realized_pnl > 0:
+            return "won"
+        if trade.realized_pnl < 0:
+            return "lost"
+        return None
+    return "won" if trade.resolution_value >= 1.0 else "lost"
 
 
 def _backfill_event_slugs(
@@ -85,7 +99,7 @@ def list_trades(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_app_settings),
 ) -> list[dict]:
-    trades = TradeRepository(db).list_trades()
+    trades = TradeRepository(db).list_trades(statuses=VISIBLE_TRADE_STATUSES)
     markets = {
         market.id: market
         for market in db.scalars(
@@ -103,6 +117,7 @@ def list_trades(
             ),
             "market_url": _market_url(markets.get(trade.market_id)),
             "status": trade.status,
+            "result": _trade_result(trade),
             "side": trade.side,
             "stake": trade.stake,
             "quantity": trade.quantity,
@@ -141,6 +156,7 @@ def get_trade(
         "market_question": market.question if market else "",
         "market_url": _market_url(market),
         "status": trade.status,
+        "result": _trade_result(trade),
         "side": trade.side,
         "stake": trade.stake,
         "quantity": trade.quantity,

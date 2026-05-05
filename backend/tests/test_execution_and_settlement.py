@@ -93,6 +93,50 @@ def test_settlement_realizes_pnl_and_creates_postmortem(db_session, test_setting
     assert refreshed.realized_pnl != 0
 
 
+def test_execution_allows_reentry_after_position_is_closed(db_session, test_settings) -> None:
+    market, signal, decision = seed_trade_dependencies(db_session)
+    execution_service = PaperExecutionService(db_session, test_settings)
+    first_trade = execution_service.execute_trade(signal, decision, market)
+    SettlementService(db_session, test_settings).settle_trade(
+        first_trade.id, outcome_yes=True, signal=signal
+    )
+
+    next_signal = Signal(
+        market_id=market.id,
+        mode="heuristic",
+        status="candidate",
+        features_json={},
+        feature_importance_json={"momentum_component": 0.05},
+        market_probability=0.55,
+        fair_probability=0.63,
+        edge=0.08,
+        expected_value_proxy=0.08,
+        confidence=0.82,
+        opportunity_score=0.73,
+        rationale="fresh daily signal",
+    )
+    db_session.add(next_signal)
+    db_session.flush()
+    next_decision = RiskDecision(
+        market_id=market.id,
+        signal_id=next_signal.id,
+        approved=True,
+        reason_codes=["approved"],
+        bankroll_before=10_000,
+        proposed_stake=250,
+        confidence=0.82,
+        details_json={},
+    )
+    db_session.add(next_decision)
+    db_session.commit()
+
+    result = execution_service.run()
+
+    assert result.trades_created == 1
+    trades = db_session.query(type(first_trade)).filter_by(market_id=market.id).all()
+    assert len(trades) == 2
+
+
 def test_resolved_outcome_handles_normalized_yes_no_prices(test_settings) -> None:
     client = PolymarketClient(test_settings)
 

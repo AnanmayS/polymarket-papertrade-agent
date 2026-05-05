@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from app.repositories.signal_repository import SignalRepository
 from app.repositories.trade_repository import TradeRepository
 from app.services.analytics_service import AnalyticsService
 from app.utils.math import clamp, kelly_fraction
+from app.utils.time import local_now, to_local
 
 
 @dataclass
@@ -75,10 +77,11 @@ class RiskService:
     def _build_risk_state(self) -> RiskState:
         portfolio = self.analytics_service.snapshot()
         open_positions = self.trade_repo.open_positions()
+        today = local_now(self.settings.market_timezone).date()
         daily_realized_loss = sum(
             abs(min(trade.realized_pnl, 0.0))
-            for trade in self.trade_repo.list_trades(limit=200)
-            if trade.status == "settled"
+            for trade in self.trade_repo.list_trades(limit=200, statuses=("settled",))
+            if self._settlement_date(trade) == today
         )
         market_exposure: defaultdict[int, float] = defaultdict(float)
         category_exposure: defaultdict[str, float] = defaultdict(float)
@@ -96,7 +99,13 @@ class RiskService:
             category_exposure=dict(category_exposure),
         )
 
-    def _evaluate_signal(self, signal: Signal, market: Market, risk_state: RiskState) -> RiskDecision:
+    def _settlement_date(self, trade) -> date | None:
+        settled_at = to_local(trade.settled_at or trade.closed_at, self.settings.market_timezone)
+        return settled_at.date() if settled_at else None
+
+    def _evaluate_signal(
+        self, signal: Signal, market: Market, risk_state: RiskState
+    ) -> RiskDecision:
         reasons: list[str] = []
         proposed_stake = self.size_position(signal, risk_state.bankroll)
         available_cash_before = risk_state.available_cash
@@ -109,10 +118,7 @@ class RiskService:
             reasons.append("confidence_below_threshold")
         if risk_state.open_trade_count >= self.settings.max_open_trades:
             reasons.append("max_open_trades_reached")
-        if (
-            risk_state.daily_realized_loss
-            >= risk_state.bankroll * self.settings.max_daily_loss_pct
-        ):
+        if risk_state.daily_realized_loss >= risk_state.bankroll * self.settings.max_daily_loss_pct:
             reasons.append("max_daily_loss_reached")
         if proposed_stake > risk_state.bankroll * self.settings.max_position_size_pct:
             reasons.append("position_size_cap_exceeded")

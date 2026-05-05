@@ -30,9 +30,7 @@ class SettlementService:
         self.polymarket_client = PolymarketClient(settings)
 
     def run(self) -> SettlementRunResult:
-        trades = [
-            trade for trade in self.trade_repo.list_trades(limit=200) if trade.status == "opened"
-        ]
+        trades = self.trade_repo.list_trades(limit=200, statuses=("opened",))
         settled = 0
         notes: list[str] = []
         for trade in trades:

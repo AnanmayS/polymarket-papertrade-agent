@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     local_database_url: str = f"sqlite:///{DEFAULT_SQLITE_PATH}"
     redis_url: str = "redis://localhost:6379/0"
     use_redis: bool = False
-    cors_allowed_origins: str = "http://localhost:5173"
+    cors_allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     engine_control_token: str | None = None
 
     polymarket_gamma_url: str = "https://gamma-api.polymarket.com"

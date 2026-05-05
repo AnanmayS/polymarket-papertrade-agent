@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 from app.models.market import Market
 from app.models.risk import RiskDecision
 from app.models.signal import Signal
-from app.models.trade import Position
+from app.models.trade import Position, Trade
 from app.services.risk_service import RiskService
+from app.utils.time import utc_now
 
 
 def test_position_sizing_is_capped(db_session, test_settings) -> None:
@@ -69,6 +72,92 @@ def test_risk_blocks_low_confidence_signal(db_session, test_settings) -> None:
     decision = RiskService(db_session, test_settings).evaluate_signal(signal, market)
     assert decision.approved is False
     assert "confidence_below_threshold" in decision.reason_codes
+
+
+def test_risk_daily_loss_resets_after_previous_day(db_session, test_settings) -> None:
+    old_market = Market(
+        external_id="old-loss",
+        slug="old-loss",
+        question="Did yesterday lose?",
+        category="sports",
+        sports_league="NBA",
+        active=False,
+        closed=True,
+        archived=False,
+        liquidity=50_000,
+        volume=90_000,
+        best_bid=0.49,
+        best_ask=0.51,
+        last_trade_price=0.5,
+        spread=0.02,
+        implied_probability=0.5,
+        opportunity_score=0.7,
+        metadata_json={},
+    )
+    candidate_market = Market(
+        external_id="fresh-day",
+        slug="fresh-day",
+        question="Will Team D win?",
+        category="sports",
+        sports_league="NBA",
+        active=True,
+        closed=False,
+        archived=False,
+        liquidity=50_000,
+        volume=90_000,
+        best_bid=0.49,
+        best_ask=0.51,
+        last_trade_price=0.5,
+        spread=0.02,
+        implied_probability=0.5,
+        opportunity_score=0.7,
+        metadata_json={},
+    )
+    db_session.add_all([old_market, candidate_market])
+    db_session.flush()
+    db_session.add(
+        Trade(
+            market_id=old_market.id,
+            side="buy_yes",
+            status="settled",
+            closed_at=utc_now() - timedelta(days=1),
+            settled_at=utc_now() - timedelta(days=1),
+            quantity=100,
+            stake=100,
+            fill_price=0.5,
+            exit_price=0.0,
+            fees_paid=0.0,
+            slippage_paid=0.0,
+            realized_pnl=-(test_settings.initial_bankroll * test_settings.max_daily_loss_pct),
+            unrealized_pnl=0.0,
+            confidence=0.9,
+            entry_edge=0.05,
+            resolution_value=0.0,
+            rationale="old loss",
+            metadata_json={},
+        )
+    )
+    signal = Signal(
+        market_id=candidate_market.id,
+        mode="heuristic",
+        status="candidate",
+        features_json={},
+        feature_importance_json={},
+        market_probability=0.5,
+        fair_probability=0.62,
+        edge=0.12,
+        expected_value_proxy=0.12,
+        confidence=0.9,
+        opportunity_score=0.8,
+        rationale="new day signal",
+    )
+    db_session.add(signal)
+    db_session.commit()
+
+    decision = RiskService(db_session, test_settings).evaluate_signal(signal, candidate_market)
+
+    assert decision.approved is True
+    assert "max_daily_loss_reached" not in decision.reason_codes
 
 
 def test_risk_respects_max_open_trades_across_batch(db_session, test_settings) -> None:

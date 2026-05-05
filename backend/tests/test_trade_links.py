@@ -116,3 +116,63 @@ def test_trades_derive_more_markets_event_link_for_spread(client, db_session, mo
         payload[0]["market_url"]
         == "https://polymarket.com/event/lib-lan-lqu-2026-04-28-more-markets"
     )
+
+
+def test_trades_only_return_visible_lifecycle_statuses_with_results(
+    client, db_session, monkeypatch
+):
+    market = _create_market(db_session, external_id="visible-statuses")
+    open_trade = _create_trade(db_session, market.id)
+    settled_trade = Trade(
+        market_id=market.id,
+        side="buy_yes",
+        status="settled",
+        stake=100.0,
+        quantity=200.0,
+        fill_price=0.5,
+        exit_price=1.0,
+        fees_paid=0.2,
+        slippage_paid=0.4,
+        realized_pnl=99.8,
+        unrealized_pnl=0.0,
+        confidence=0.9,
+        entry_edge=0.04,
+        resolution_value=1.0,
+        rationale="settled trade",
+        metadata_json={},
+    )
+    proposed_trade = Trade(
+        market_id=market.id,
+        side="buy_yes",
+        status="proposed",
+        stake=100.0,
+        quantity=200.0,
+        fill_price=0.5,
+        fees_paid=0.2,
+        slippage_paid=0.4,
+        realized_pnl=0.0,
+        unrealized_pnl=0.0,
+        confidence=0.9,
+        entry_edge=0.04,
+        rationale="proposed trade",
+        metadata_json={},
+    )
+    db_session.add_all([settled_trade, proposed_trade])
+    db_session.commit()
+    monkeypatch.setattr(
+        PolymarketClient,
+        "fetch_active_event_slug_map",
+        lambda self: {},
+    )
+
+    response = client.get("/trades")
+
+    assert response.status_code == 200
+    payload = response.json()
+    trade_ids = {item["id"] for item in payload}
+    assert open_trade.id in trade_ids
+    assert settled_trade.id in trade_ids
+    assert proposed_trade.id not in trade_ids
+    result_by_id = {item["id"]: item["result"] for item in payload}
+    assert result_by_id[open_trade.id] is None
+    assert result_by_id[settled_trade.id] == "won"

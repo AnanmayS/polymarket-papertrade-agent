@@ -28,10 +28,7 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      `Request failed: ${response.status} ${response.statusText}`,
-      response.status,
-    );
+    throw new ApiError(await errorMessage(response, url), response.status);
   }
 
   if (response.status === 204) {
@@ -65,10 +62,7 @@ async function fetchSameOriginJson<T>(path: string, init?: RequestInit): Promise
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      `Request failed: ${response.status} ${response.statusText}`,
-      response.status,
-    );
+    throw new ApiError(await errorMessage(response, path), response.status);
   }
 
   if (response.status === 204) {
@@ -83,6 +77,22 @@ async function fetchSameOriginJson<T>(path: string, init?: RequestInit): Promise
   }
 
   return (await response.json()) as T;
+}
+
+async function errorMessage(response: Response, url: string) {
+  let detail = "";
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      const body = (await response.clone().json()) as { detail?: unknown };
+      if (typeof body.detail === "string") {
+        detail = `: ${body.detail}`;
+      }
+    } catch {
+      detail = "";
+    }
+  }
+  return `Request failed: ${response.status} ${response.statusText} from ${url}${detail}`;
 }
 
 export const api = {

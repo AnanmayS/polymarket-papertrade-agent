@@ -9,7 +9,7 @@ from app.services.analytics_service import AnalyticsService
 from app.services.execution_service import PaperExecutionService
 from app.services.risk_service import RiskService
 from app.services.scanner_service import ScannerService
-from app.services.settlement_service import SettlementService
+from app.services.settlement_service import SettlementRunResult, SettlementService
 from app.services.signal_service import SignalService
 
 
@@ -39,10 +39,15 @@ class EngineService:
         return result
 
     def run_cycle(self):
+        opening_settlement = self.settle_paper_trades()
         scan_result = self.run_scan()
         signal_result, risk_result = self.run_signals()
         trade_result = self.run_paper_trades()
-        settlement_result = self.settle_paper_trades()
+        closing_settlement = self.settle_paper_trades()
+        settlement_result = SettlementRunResult(
+            settled_trades=(opening_settlement.settled_trades + closing_settlement.settled_trades),
+            notes=(opening_settlement.notes + closing_settlement.notes)[:10],
+        )
         return {
             "scan": scan_result,
             "signals": signal_result,

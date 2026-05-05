@@ -51,7 +51,7 @@ class PaperExecutionService:
                 continue
             signal = self.session.get(Signal, decision.signal_id)
             market = self.session.get(Market, decision.market_id)
-            if self.trade_repo.get_position_by_market(market.id) is not None:
+            if self.trade_repo.get_open_position_by_market(market.id) is not None:
                 continue
             trade = self.execute_trade(signal, decision, market)
             created += 1
