@@ -58,6 +58,45 @@ def _parse_list(value: Any) -> list[Any]:
     return []
 
 
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if value is not None:
+            return value
+    return None
+
+
+def _resolution_status_values(item: dict[str, Any]) -> set[str]:
+    metadata = item.get("metadata_json", {})
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    status_values: set[str] = set()
+    for key in ("umaResolutionStatus", "uma_resolution_status"):
+        status = item.get(key) or metadata.get(key)
+        if status:
+            status_values.add(str(status).strip().lower())
+
+    for key in ("umaResolutionStatuses", "uma_resolution_statuses"):
+        for status in _parse_list(item.get(key) or metadata.get(key)):
+            if status:
+                status_values.add(str(status).strip().lower())
+
+    return status_values
+
+
+def _has_final_resolution(item: dict[str, Any]) -> bool:
+    statuses = _resolution_status_values(item)
+    if statuses:
+        return bool(statuses & {"resolved", "finalized"})
+
+    metadata = item.get("metadata_json", {})
+    if not isinstance(metadata, dict):
+        metadata = {}
+    return _as_bool(_first_present(item.get("closed"), metadata.get("closed"))) or _as_bool(
+        _first_present(item.get("archived"), metadata.get("archived"))
+    )
+
+
 class PolymarketClient:
     """Fetch sports markets from public Polymarket endpoints."""
 
@@ -228,6 +267,9 @@ class PolymarketClient:
         if demo_outcome is not None:
             return bool(demo_outcome)
 
+        if not _has_final_resolution(item):
+            return None
+
         outcomes = _parse_list(item.get("outcomes") or metadata.get("outcomes"))
         prices = [
             _as_float(price, -1.0)
@@ -329,6 +371,7 @@ class PolymarketClient:
                 "event_slug": event.get("slug") if event else None,
                 "outcomes": _parse_list(item.get("outcomes")),
                 "outcome_prices": _parse_list(item.get("outcomePrices")),
+                "uma_resolution_status": item.get("umaResolutionStatus"),
                 "uma_resolution_statuses": item.get("umaResolutionStatuses"),
                 "tags": event.get("tags", []) if event else [],
                 "demo_final_outcome": (

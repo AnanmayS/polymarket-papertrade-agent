@@ -142,6 +142,7 @@ def test_resolved_outcome_handles_normalized_yes_no_prices(test_settings) -> Non
 
     outcome = client.extract_resolved_outcome(
         {
+            "closed": True,
             "metadata_json": {
                 "outcomes": ["Yes", "No"],
                 "outcome_prices": ["0.9995", "0.0005"],
@@ -157,6 +158,7 @@ def test_resolved_outcome_handles_normalized_no_winner(test_settings) -> None:
 
     outcome = client.extract_resolved_outcome(
         {
+            "closed": True,
             "metadata_json": {
                 "outcomes": ["Yes", "No"],
                 "outcome_prices": ["0.0005", "0.9995"],
@@ -165,3 +167,40 @@ def test_resolved_outcome_handles_normalized_no_winner(test_settings) -> None:
     )
 
     assert outcome is False
+
+
+def test_resolved_outcome_ignores_open_market_at_settlement_price(test_settings) -> None:
+    client = PolymarketClient(test_settings)
+
+    outcome = client.extract_resolved_outcome(
+        {
+            "active": True,
+            "closed": False,
+            "metadata_json": {
+                "outcomes": ["Over", "Under"],
+                "outcome_prices": ["1", "0"],
+                "uma_resolution_statuses": "[]",
+            },
+        }
+    )
+
+    assert outcome is None
+
+
+def test_resolved_outcome_uses_polymarket_final_status_for_totals(test_settings) -> None:
+    client = PolymarketClient(test_settings)
+
+    outcome = client.extract_resolved_outcome(
+        {
+            "active": True,
+            "closed": True,
+            "metadata_json": {
+                "outcomes": ["Over", "Under"],
+                "outcome_prices": ["1", "0"],
+                "uma_resolution_status": "resolved",
+                "uma_resolution_statuses": '["proposed"]',
+            },
+        }
+    )
+
+    assert outcome is True
