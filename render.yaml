@@ -5,13 +5,11 @@ services:
   # ── FastAPI backend ──────────────────────────────────────────────
   - type: web
     name: polymarket-backend
-    env: python
+    env: docker
     repo: https://github.com/AnanmayS/polymarket-papertrade-agent.git
     rootDir: backend
     plan: free
     region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -40,14 +38,14 @@ services:
   # Runs once per day at 14:00 UTC.  Starts, runs one cycle, exits.
   - type: cron
     name: polymarket-daily-cycle
-    env: python
+    env: docker
     repo: https://github.com/AnanmayS/polymarket-papertrade-agent.git
     rootDir: backend
     region: oregon
     schedule: "0 14 * * *"
-    buildCommand: pip install -r requirements.txt
-    startCommand: python scripts/run_cycle_once.py
     envVars:
+      - key: RUN_MODE
+        value: cron
       - key: APP_ENV
         value: production
       - key: USE_LIVE_POLYMARKET_DATA
