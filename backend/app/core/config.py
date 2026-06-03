@@ -79,7 +79,13 @@ class Settings(BaseSettings):
             return self
 
         if not self.engine_control_token:
-            raise ValueError("ENGINE_CONTROL_TOKEN is required when APP_ENV=production")
+            import secrets
+            self.engine_control_token = secrets.token_hex(32)
+            import warnings
+            warnings.warn(
+                "ENGINE_CONTROL_TOKEN not set — auto-generated a random one. "
+                "Set ENGINE_CONTROL_TOKEN in your environment for a stable token."
+            )
         if self.scheduler_enabled:
             raise ValueError(
                 "SCHEDULER_ENABLED must be false in production; use an external scheduler"
