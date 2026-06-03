@@ -1,0 +1,68 @@
+# Render Blueprint — deploy the Polymarket Paper Trade Agent on Render's free tier
+# For full instructions: docs/render-setup.md
+
+services:
+  # ── FastAPI backend ──────────────────────────────────────────────
+  - type: web
+    name: polymarket-backend
+    env: docker
+    repo: https://github.com/AnanmayS/polymarket-papertrade-agent.git
+    rootDir: backend
+    plan: free
+    region: oregon
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: USE_LIVE_POLYMARKET_DATA
+        value: "true"
+      - key: SEED_DEMO_DATA
+        value: "false"
+      - key: SENTIMENT_ENABLED
+        value: "true"
+      - key: SCHEDULER_ENABLED
+        value: "false"
+      - key: AUTO_RUN_ON_STARTUP
+        value: "false"
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://polymarket-papertrade-agent-frontend.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: polymarket-pg
+          property: connectionString
+      - key: ENGINE_CONTROL_TOKEN
+        sync: false   # set this manually in the Render dashboard
+
+  # ── Daily paper-trading cycle (cron) ───────────────────────────
+  # Runs once per day at 14:00 UTC.  Starts, runs one cycle, exits.
+  - type: cron
+    name: polymarket-daily-cycle
+    env: docker
+    repo: https://github.com/AnanmayS/polymarket-papertrade-agent.git
+    rootDir: backend
+    plan: free
+    region: oregon
+    schedule: "0 14 * * *"
+    startCommand: python scripts/run_cycle_once.py
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: USE_LIVE_POLYMARKET_DATA
+        value: "true"
+      - key: SEED_DEMO_DATA
+        value: "false"
+      - key: SENTIMENT_ENABLED
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: polymarket-pg
+          property: connectionString
+
+# ── PostgreSQL database─────────────────────────────────────────
+databases:
+  - name: polymarket-pg
+    plan: free             # 1 GB storage, persistent
+    databaseName: polymarket_papertrade
+    region: oregon
