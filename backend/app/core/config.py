@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     min_hours_to_resolution: float = 0.25
     max_hours_to_resolution: int = 336
     min_confidence: float = 0.35
+    min_odds_value: float = 0.01
+    min_bet_score: float = 0.55
     max_position_size_pct: float = 0.03
     max_market_exposure_pct: float = 0.06
     max_category_exposure_pct: float = 0.20
@@ -54,6 +56,7 @@ class Settings(BaseSettings):
     fractional_kelly: float = 0.25
     default_signal_mode: str = "heuristic"
     min_edge_to_trade: float = 0.025
+    sentiment_enabled: bool = True
 
     scheduler_enabled: bool = False
     auto_run_on_startup: bool = False
@@ -79,13 +82,7 @@ class Settings(BaseSettings):
             return self
 
         if not self.engine_control_token:
-            import secrets
-            self.engine_control_token = secrets.token_hex(32)
-            import warnings
-            warnings.warn(
-                "ENGINE_CONTROL_TOKEN not set — auto-generated a random one. "
-                "Set ENGINE_CONTROL_TOKEN in your environment for a stable token."
-            )
+            raise ValueError("ENGINE_CONTROL_TOKEN must be set in production")
         if self.scheduler_enabled:
             raise ValueError(
                 "SCHEDULER_ENABLED must be false in production; use an external scheduler"
@@ -122,11 +119,7 @@ class Settings(BaseSettings):
     def parsed_cors_allowed_origins(self) -> list[str]:
         """Return configured CORS origins from a CSV env var."""
 
-        return [
-            origin.strip()
-            for origin in self.cors_allowed_origins.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
     @property
     def engine_auth_enabled(self) -> bool:

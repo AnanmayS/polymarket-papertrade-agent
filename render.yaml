@@ -26,7 +26,7 @@ services:
       - key: AUTO_RUN_ON_STARTUP
         value: "false"
       - key: CORS_ALLOWED_ORIGINS
-        value: https://polymarket-papertrade-agent-frontend.vercel.app
+        value: https://frontend-ananmays-projects-52b5594c.vercel.app
       - key: DATABASE_URL
         fromDatabase:
           name: polymarket-pg

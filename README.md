@@ -25,21 +25,21 @@ No real-money trading is performed. No wallet signing or on-chain execution is i
 
 ## Live app
 
-- Main dashboard: [https://polymarket-papertrade-agent-frontend.vercel.app](https://polymarket-papertrade-agent-frontend.vercel.app)
+- Main dashboard: [https://frontend-ananmays-projects-52b5594c.vercel.app](https://frontend-ananmays-projects-52b5594c.vercel.app)
 
 ## Screenshots
 
 ### Overview
 
-[![Overview dashboard](docs/screenshots/overview.png)](https://polymarket-papertrade-agent-frontend.vercel.app)
+[![Overview dashboard](docs/screenshots/overview.png)](https://frontend-ananmays-projects-52b5594c.vercel.app)
 
 ### Trade ideas
 
-[![Trade ideas page](docs/screenshots/trade-ideas.png)](https://polymarket-papertrade-agent-frontend.vercel.app/ideas)
+[![Trade ideas page](docs/screenshots/trade-ideas.png)](https://frontend-ananmays-projects-52b5594c.vercel.app/ideas)
 
 ### Paper trades
 
-[![Paper trades page](docs/screenshots/paper-trades.png)](https://polymarket-papertrade-agent-frontend.vercel.app/trades)
+[![Paper trades page](docs/screenshots/paper-trades.png)](https://frontend-ananmays-projects-52b5594c.vercel.app/trades)
 
 ## Architecture
 

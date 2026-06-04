@@ -5,6 +5,7 @@ from app.models.model_run import ModelRun
 from app.models.portfolio import PortfolioSnapshot
 from app.models.postmortem import Postmortem
 from app.models.risk import RiskDecision
+from app.models.sentiment import SentimentSignal
 from app.models.signal import Signal
 from app.models.trade import Position, Trade
 
@@ -16,6 +17,7 @@ __all__ = [
     "Position",
     "Postmortem",
     "RiskDecision",
+    "SentimentSignal",
     "Signal",
     "Trade",
 ]

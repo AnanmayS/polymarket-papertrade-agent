@@ -44,7 +44,7 @@ Follow the step-by-step guide in [docs/render-setup.md](render-setup.md).
 | `SENTIMENT_ENABLED` | `true` | |
 | `SCHEDULER_ENABLED` | `false` | Cron job handles scheduling |
 | `AUTO_RUN_ON_STARTUP` | `false` | |
-| `CORS_ALLOWED_ORIGINS` | `https://polymarket-papertrade-agent-frontend.vercel.app` | Your frontend URL |
+| `CORS_ALLOWED_ORIGINS` | `https://frontend-ananmays-projects-52b5594c.vercel.app` | Your frontend URL |
 | `DATABASE_URL` | _(from Render PG)_ | Auto-injected by the blueprint |
 | `ENGINE_CONTROL_TOKEN` | _(you set this)_ | Required for production. Generate one with `openssl rand -hex 32` |
 

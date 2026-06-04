@@ -9,8 +9,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+# Install scipy + numpy as pre-built wheels FIRST so pip doesn't try to
+# rebuild them from source as isolated build deps of scikit-learn.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir numpy==2.3.2 scipy && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 

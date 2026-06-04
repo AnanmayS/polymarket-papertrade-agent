@@ -27,6 +27,8 @@ FEATURE_KEYS = [
     "momentum_1h",
     "momentum_24h",
     "mean_reversion_gap",
+    "sentiment_score",
+    "lineup_signal",
 ]
 
 
@@ -44,12 +46,16 @@ class ProbabilityModelService:
         liquidity_component = (features["liquidity_score"] - 0.5) * 0.04
         spread_penalty = (0.5 - features["spread"]) * 0.04
         mean_reversion_component = features["mean_reversion_gap"] * 0.15
+        sentiment_component = features.get("sentiment_score", 0.0) * 0.08
+        lineup_component = features.get("lineup_signal", 0.0) * 0.02
         fair_prob = clamp(
             market_prob
             + (momentum_component * 0.35)
             + liquidity_component
             + spread_penalty
-            - mean_reversion_component,
+            - mean_reversion_component
+            + sentiment_component
+            + lineup_component,
             0.02,
             0.98,
         )
@@ -58,10 +64,13 @@ class ProbabilityModelService:
             "liquidity_component": round(liquidity_component, 4),
             "spread_penalty": round(spread_penalty, 4),
             "mean_reversion_component": round(mean_reversion_component, 4),
+            "sentiment_component": round(sentiment_component, 4),
+            "lineup_component": round(lineup_component, 4),
         }
         rationale = (
             "Heuristic fair probability blends market price with short-term momentum, "
-            "liquidity quality, and spread efficiency. Paper-trading estimates do not imply live edge."
+            "liquidity quality, spread efficiency, and available sentiment context. "
+            "Paper-trading estimates do not imply live edge."
         )
         return fair_prob, importance, rationale
 
