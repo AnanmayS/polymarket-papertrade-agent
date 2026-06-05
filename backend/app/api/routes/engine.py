@@ -110,3 +110,30 @@ def manual_settle_trade(
         created=1,
         notes=[f"trade:{trade_id}:{'won' if body.outcome_yes else 'lost'}"],
     )
+
+
+@router.post("/delete-trade/{trade_id}", response_model=EngineActionResponse)
+def delete_trade(
+    trade_id: int,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_app_settings),
+) -> EngineActionResponse:
+    """Delete a stuck open trade and its position so the engine can re-bet on live markets."""
+    repo = TradeRepository(db)
+    trade = repo.get_trade(trade_id)
+    if trade is None:
+        raise HTTPException(status_code=404, detail=f"Trade {trade_id} not found")
+    if trade.status == "settled":
+        return EngineActionResponse(
+            message=f"Trade {trade_id} is already settled — won't delete settled trades",
+            created=0,
+            notes=[f"trade:{trade_id}:already_settled"],
+        )
+
+    repo.delete_trade_and_position(trade_id)
+    db.commit()
+    return EngineActionResponse(
+        message=f"Trade {trade_id} deleted",
+        created=0,
+        notes=[f"trade:{trade_id}:deleted"],
+    )

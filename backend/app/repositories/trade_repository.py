@@ -81,3 +81,14 @@ class TradeRepository:
     def list_postmortems(self, limit: int = 100) -> list[Postmortem]:
         stmt = select(Postmortem).order_by(desc(Postmortem.created_at)).limit(limit)
         return list(self.session.scalars(stmt))
+
+    def delete_trade_and_position(self, trade_id: int) -> bool:
+        """Delete a trade and its associated position. Returns True if deleted."""
+        trade = self.session.get(Trade, trade_id)
+        if trade is None:
+            return False
+        position = self.get_position_by_market(trade.market_id)
+        if position is not None:
+            self.session.delete(position)
+        self.session.delete(trade)
+        return True
