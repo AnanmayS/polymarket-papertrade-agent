@@ -82,10 +82,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     allow_origins = active_settings.parsed_cors_allowed_origins or ["http://localhost:5173"]
-    allow_credentials = "*" not in allow_origins
+    allow_origin_regex = active_settings.cors_allow_origin_regex
+    allow_credentials = True
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
+        allow_origin_regex=allow_origin_regex,
         allow_credentials=allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -122,6 +122,13 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
     @property
+    def cors_allow_origin_regex(self) -> str | None:
+        """Vercel deployment URLs change every redeploy — allow any *.vercel.app origin."""
+        if self.app_env == "production":
+            return r"https://.*\.vercel\.app"
+        return None
+
+    @property
     def engine_auth_enabled(self) -> bool:
         """Protect control endpoints in production or when a token is configured."""
 
