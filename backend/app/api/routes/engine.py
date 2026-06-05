@@ -1,12 +1,14 @@
 """Engine routes."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_app_settings, get_db, require_engine_control
 from app.core.config import Settings
-from app.schemas.engine import EngineActionResponse
+from app.repositories.trade_repository import TradeRepository
+from app.schemas.engine import EngineActionResponse, ManualSettleRequest
 from app.services.engine_service import EngineService
+from app.services.settlement_service import SettlementService
 
 router = APIRouter(
     prefix="/engine",
@@ -74,4 +76,37 @@ def settle_paper_trades(
     result = EngineService(db, settings).settle_paper_trades()
     return EngineActionResponse(
         message="Paper trades settled", created=result.settled_trades, notes=result.notes
+    )
+
+
+@router.post("/manual-settle-trade/{trade_id}", response_model=EngineActionResponse)
+def manual_settle_trade(
+    trade_id: int,
+    body: ManualSettleRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_app_settings),
+) -> EngineActionResponse:
+    """Force-settle a trade with a manual YES/NO outcome.
+
+    Use this when a market has disappeared from Polymarket's API
+    or the automated settlement couldn't determine the outcome.
+    """
+    trade_repo = TradeRepository(db)
+    trade = trade_repo.get_trade(trade_id)
+    if trade is None:
+        raise HTTPException(status_code=404, detail=f"Trade {trade_id} not found")
+    if trade.status == "settled":
+        return EngineActionResponse(
+            message=f"Trade {trade_id} is already settled",
+            created=0,
+            notes=[f"trade:{trade_id}:already_settled"],
+        )
+
+    svc = SettlementService(db, settings)
+    svc.settle_trade(trade_id, body.outcome_yes)
+    db.commit()
+    return EngineActionResponse(
+        message=f"Trade {trade_id} settled as {'YES' if body.outcome_yes else 'NO'}",
+        created=1,
+        notes=[f"trade:{trade_id}:{'won' if body.outcome_yes else 'lost'}"],
     )

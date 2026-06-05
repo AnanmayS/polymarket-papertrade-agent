@@ -58,6 +58,8 @@ services:
         fromDatabase:
           name: polymarket-pg
           property: connectionString
+      - key: ENGINE_CONTROL_TOKEN
+        sync: false
 
 # ── PostgreSQL database─────────────────────────────────────────
 databases:

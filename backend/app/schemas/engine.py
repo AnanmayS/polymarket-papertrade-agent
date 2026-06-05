@@ -9,6 +9,11 @@ class EngineActionResponse(BaseModel):
     notes: list[str] = []
 
 
+class ManualSettleRequest(BaseModel):
+    outcome_yes: bool
+    """True = YES wins, False = NO wins."""
+
+
 class HealthResponse(BaseModel):
     status: str
     app: str
