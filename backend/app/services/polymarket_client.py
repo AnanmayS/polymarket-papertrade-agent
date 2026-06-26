@@ -98,9 +98,12 @@ def _has_final_resolution(item: dict[str, Any]) -> bool:
 
 
 class PolymarketClient:
-    """Fetch sports markets from public Polymarket endpoints."""
+    """Fetch markets from public Polymarket endpoints across categories."""
 
-    SPORTS_TAG_ID = "1"
+    CATEGORY_TAG_IDS: dict[str, str] = {
+        "sports": "1",
+        "politics": "2",
+    }
     GENERIC_TAG_SLUGS = {"sports", "games"}
 
     def __init__(self, settings: Settings) -> None:
@@ -147,6 +150,12 @@ class PolymarketClient:
     def fetch_active_sports_markets(self) -> tuple[list[dict[str, Any]], str]:
         """Fetch live sports markets from the sports events feed."""
 
+        return self.fetch_active_markets("sports")
+
+    def fetch_active_markets(self, category: str) -> tuple[list[dict[str, Any]], str]:
+        """Fetch live markets for a given category (sports, politics, etc.)."""
+
+        tag_id = self.CATEGORY_TAG_IDS.get(category)
         if not self.settings.use_live_polymarket_data:
             return self.load_demo_markets(), "demo"
 
@@ -158,7 +167,7 @@ class PolymarketClient:
             with httpx.Client(timeout=self.settings.request_timeout_seconds) as client:
                 for page in range(max_pages):
                     params = {
-                        "tag_id": self.SPORTS_TAG_ID,
+                        "tag_id": tag_id or "1",
                         "related_tags": "true",
                         "active": "true",
                         "closed": "false",
@@ -201,7 +210,7 @@ class PolymarketClient:
             with httpx.Client(timeout=self.settings.request_timeout_seconds) as client:
                 for page in range(max_pages):
                     params = {
-                        "tag_id": self.SPORTS_TAG_ID,
+                        "tag_id": self.CATEGORY_TAG_IDS.get("sports", "1"),
                         "related_tags": "true",
                         "active": "true",
                         "closed": "false",

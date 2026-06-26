@@ -1,4 +1,4 @@
-"""Market scanning and ranking."""
+"""Market scanning and ranking across multiple Polymarket categories."""
 
 from __future__ import annotations
 
@@ -18,10 +18,13 @@ from app.utils.time import ensure_utc, local_now, to_local, utc_now
 class ScanResult:
     markets_scanned: int
     source: str
+    categories: list[str]
 
 
 class ScannerService:
-    """Scan sports markets and persist snapshots."""
+    """Scan markets across sports, politics, and other categories."""
+
+    SCAN_CATEGORIES = ["sports", "politics"]
 
     def __init__(self, session: Session, settings: Settings) -> None:
         self.session = session
@@ -29,12 +32,22 @@ class ScannerService:
         self.repo = MarketRepository(session)
         self.client = PolymarketClient(settings)
 
-    def run(self) -> ScanResult:
-        raw_markets, source = self.client.fetch_active_sports_markets()
+    def run(self, categories: list[str] | None = None) -> ScanResult:
+        target_categories = categories or self.SCAN_CATEGORIES
+        total_scanned = 0
+        all_sources: set[str] = set()
         self.repo.deactivate_active_markets()
-        scanned = self._persist_markets(raw_markets, source)
+        for category in target_categories:
+            raw_markets, source = self.client.fetch_active_markets(category)
+            all_sources.add(source)
+            scanned = self._persist_markets(raw_markets, source)
+            total_scanned += scanned
         self.session.commit()
-        return ScanResult(markets_scanned=scanned, source=source)
+        return ScanResult(
+            markets_scanned=total_scanned,
+            source=",".join(sorted(all_sources)),
+            categories=target_categories,
+        )
 
     def _persist_markets(self, raw_markets: list[dict], source: str) -> int:
         scanned = 0

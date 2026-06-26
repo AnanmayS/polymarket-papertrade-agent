@@ -13,29 +13,53 @@ const num = (value: number) =>
       ? `${(value / 1_000).toFixed(1)}k`
       : value.toFixed(0);
 
+const CATEGORIES = ["all", "sports", "politics"];
+
 export function ScannerPage() {
   const { data, loading, error } = useApi(() => api.markets(), []);
+  const [category, setCategory] = useState("all");
   const [league, setLeague] = useState("");
 
   const filtered = useMemo(() => {
     if (!data) return [];
+    let filtered = data;
+    if (category !== "all") {
+      filtered = filtered.filter(
+        (market) => market.category.toLowerCase() === category,
+      );
+    }
     const query = league.trim().toLowerCase();
-    if (!query) return data;
-    return data.filter((market) =>
-      (market.sports_league || "").toLowerCase().includes(query),
-    );
-  }, [data, league]);
+    if (query) {
+      filtered = filtered.filter((market) =>
+        (market.sports_league || "").toLowerCase().includes(query),
+      );
+    }
+    return filtered;
+  }, [data, category, league]);
 
   return (
     <SectionCard
       title="Active markets"
       action={
-        <input
-          value={league}
-          onChange={(event) => setLeague(event.target.value)}
-          placeholder="Filter by league"
-          className="w-44 rounded-md border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
-        />
+        <div className="flex items-center gap-2">
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="w-28 rounded-md border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 focus:border-neutral-600 focus:outline-none"
+          >
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </option>
+            ))}
+          </select>
+          <input
+            value={league}
+            onChange={(event) => setLeague(event.target.value)}
+            placeholder="Filter by league"
+            className="w-36 rounded-md border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-neutral-200 placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
+          />
+        </div>
       }
     >
       {loading ? (
@@ -50,6 +74,7 @@ export function ScannerPage() {
             <thead className="text-left text-xs uppercase tracking-wide text-neutral-500">
               <tr>
                 <Th>Market</Th>
+                <Th>Category</Th>
                 <Th>League</Th>
                 <Th align="right">Implied</Th>
                 <Th align="right">Spread</Th>
@@ -63,6 +88,17 @@ export function ScannerPage() {
               {filtered.map((market) => (
                 <tr key={market.id} className="hover:bg-neutral-900/50">
                   <Td className="max-w-sm truncate text-neutral-100">{market.question}</Td>
+                  <Td>
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                      market.category === "sports"
+                        ? "bg-emerald-950/60 text-emerald-400"
+                        : market.category === "politics"
+                          ? "bg-violet-950/60 text-violet-400"
+                          : "bg-neutral-800 text-neutral-400"
+                    }`}>
+                      {market.category}
+                    </span>
+                  </Td>
                   <Td className="text-neutral-400">{market.sports_league || "—"}</Td>
                   <Td align="right">{pct(market.implied_probability)}</Td>
                   <Td align="right">{market.spread.toFixed(3)}</Td>

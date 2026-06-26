@@ -108,7 +108,8 @@ class SignalService:
         )
         mean_reversion_gap = market.implied_probability - average_price
         sentiment_assessment = self.sentiment_service.assess_market(market)
-        lineup_signal = 1.0 if self._has_lineup_context(market) else 0.0
+        is_sports = market.category == "sports"
+        lineup_signal = 1.0 if is_sports and self._has_lineup_context(market) else 0.0
         return {
             "market_probability": market.implied_probability,
             "spread": market.spread,
