@@ -139,3 +139,55 @@ export type RiskSettings = {
   fractional_kelly: number;
   default_signal_mode: string;
 };
+
+export type StrategyPerformance = {
+  mode: string;
+  trades: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  realized_pnl: number;
+  avg_edge: number;
+  avg_pnl_per_trade: number;
+};
+
+export type TemporalPatterns = {
+  by_hour: { hour: number; trades: number; win_rate: number; realized_pnl: number }[];
+  by_day_of_week: { day: string; trades: number; win_rate: number; realized_pnl: number }[];
+};
+
+export type Microstructure = {
+  total_spread_paid: number;
+  total_slippage_paid: number;
+  total_fees_paid: number;
+  total_costs_paid: number;
+  costs_as_pct_of_pnl: number;
+  avg_spread_per_trade: number;
+  avg_slippage_per_trade: number;
+  avg_fees_per_trade: number;
+  spread_to_pnl_ratio: number;
+  adverse_selection: { adverse_trades: number; favorable_trades: number; adverse_rate: number };
+  avg_trade_length_hours: number;
+};
+
+export type ABComparison = {
+  period: { start: string; end: string };
+  strategies: Record<string, {
+    trades: number;
+    wins: number;
+    losses: number;
+    win_rate: number;
+    realized_pnl: number;
+    avg_return_per_trade: number;
+    sharpe: number;
+    profit_factor: number;
+    max_drawdown: number;
+  }>;
+};
+
+export type AnalysisResult = {
+  strategy_performance: StrategyPerformance[];
+  temporal_patterns: TemporalPatterns;
+  microstructure: Microstructure;
+  ab_comparison: ABComparison;
+};
