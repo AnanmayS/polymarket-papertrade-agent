@@ -1,5 +1,7 @@
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -22,6 +24,10 @@ const usd = (value: number) =>
     maximumFractionDigits: 2,
   });
 const pct = (value: number) => `${(value * 100).toFixed(1)}%`;
+const num = (value: number) => {
+  if (Math.abs(value) >= 1000) return value.toFixed(0);
+  return value.toFixed(2);
+};
 
 export function PortfolioPage() {
   const { data, loading, error } = useApi(() => api.portfolio(), []);
@@ -33,8 +39,16 @@ export function PortfolioPage() {
   const realizedTone = data.realized_pnl >= 0 ? "positive" : "negative";
   const unrealizedTone = data.unrealized_pnl >= 0 ? "positive" : "negative";
 
+  // Combine equity curve with drawdown for chart overlay
+  const chartData = data.equity_curve.map((point, index) => ({
+    ...point,
+    timestamp: point.timestamp,
+    drawdown: data.drawdown_series[index] ?? 0,
+  }));
+
   return (
     <div className="space-y-6">
+      {/* Top row — core metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <MetricCard label="Equity" value={usd(data.current_equity)} />
         <MetricCard label="Cash" value={usd(data.cash)} />
@@ -56,13 +70,47 @@ export function PortfolioPage() {
         />
       </div>
 
-      <SectionCard title="Equity curve">
-        {data.equity_curve.length === 0 ? (
+      {/* Second row — quant performance metrics */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <MetricCard
+          label="Sharpe (ann.)"
+          value={num(data.sharpe_annualized)}
+          tone={data.sharpe_annualized >= 1 ? "positive" : "neutral"}
+        />
+        <MetricCard
+          label="Max drawdown"
+          value={pct(data.max_drawdown)}
+          tone="negative"
+        />
+        <MetricCard
+          label="Drawdown duration"
+          value={`${data.max_drawdown_duration_hours.toFixed(1)}h`}
+          sub="longest drawdown"
+        />
+        <MetricCard
+          label="Avg return/trade"
+          value={usd(data.avg_return_per_trade)}
+          tone={data.avg_return_per_trade >= 0 ? "positive" : "negative"}
+        />
+        <MetricCard
+          label="Profit factor"
+          value={num(data.profit_factor)}
+          tone={data.profit_factor >= 1.5 ? "positive" : data.profit_factor >= 1 ? "neutral" : "negative"}
+        />
+        <MetricCard
+          label="Total trades"
+          value={String(data.per_market.reduce((sum, m) => sum + m.trades, 0))}
+        />
+      </div>
+
+      {/* Equity curve chart with drawdown overlay */}
+      <SectionCard title="Equity curve / drawdown">
+        {chartData.length === 0 ? (
           <EmptyState title="No equity history yet" hint="Run the agent to start building history." />
         ) : (
           <div className="h-72 w-full">
             <ResponsiveContainer>
-              <LineChart data={data.equity_curve}>
+              <ComposedChart data={chartData}>
                 <CartesianGrid stroke="#262626" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timestamp"
@@ -76,9 +124,18 @@ export function PortfolioPage() {
                   }
                 />
                 <YAxis
+                  yAxisId="left"
                   stroke="#525252"
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `$${Math.round(value)}`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="#525252"
+                  tick={{ fontSize: 11 }}
+                  tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
+                  domain={[0, "dataMax"]}
                 />
                 <Tooltip
                   contentStyle={{
@@ -87,21 +144,75 @@ export function PortfolioPage() {
                     borderRadius: 6,
                   }}
                   labelFormatter={(value) => new Date(value as string).toLocaleString()}
-                  formatter={(value: number) => usd(value)}
+                  formatter={(value: number, name: string) => {
+                    if (name === "drawdown") return [`${(value * 100).toFixed(1)}%`, "Drawdown"];
+                    return [usd(value), name === "bankroll" ? "Equity" : name];
+                  }}
                 />
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="bankroll"
                   stroke="#34d399"
                   dot={false}
                   strokeWidth={2}
                 />
-              </LineChart>
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="drawdown"
+                  stroke="#ef4444"
+                  fill="#ef4444"
+                  fillOpacity={0.15}
+                  dot={false}
+                  strokeWidth={1}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}
       </SectionCard>
 
+      {/* Win rate by category */}
+      <SectionCard title="Win rate by category">
+        {data.per_category.length === 0 ? (
+          <EmptyState title="No closed trades yet" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase tracking-wide text-neutral-500">
+                <tr>
+                  <Th>Category</Th>
+                  <Th align="right">Trades</Th>
+                  <Th align="right">Wins</Th>
+                  <Th align="right">Losses</Th>
+                  <Th align="right">Win rate</Th>
+                  <Th align="right">Realized PnL</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {data.per_category.map((cat) => (
+                  <tr key={cat.category} className="hover:bg-neutral-900/50">
+                    <Td className="capitalize">{cat.category}</Td>
+                    <Td align="right">{cat.trades}</Td>
+                    <Td align="right" className="text-emerald-400">{cat.wins}</Td>
+                    <Td align="right" className="text-rose-400">{cat.losses}</Td>
+                    <Td align="right">{pct(cat.win_rate)}</Td>
+                    <Td
+                      align="right"
+                      className={cat.realized_pnl >= 0 ? "text-emerald-400" : "text-rose-400"}
+                    >
+                      {usd(cat.realized_pnl)}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Open positions */}
       <SectionCard title="Open positions">
         {data.open_positions.length === 0 ? (
           <EmptyState title="No open positions" />
@@ -162,6 +273,7 @@ export function PortfolioPage() {
         )}
       </SectionCard>
 
+      {/* Results by market */}
       <SectionCard title="Results by market">
         {data.per_market.length === 0 ? (
           <EmptyState title="No closed trades yet" />

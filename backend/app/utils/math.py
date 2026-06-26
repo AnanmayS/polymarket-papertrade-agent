@@ -54,6 +54,17 @@ def sharpe_like(returns: list[float]) -> float:
     return mean / math.sqrt(variance)
 
 
+def sharpe_annualized(returns: list[float]) -> float:
+    """Annualized Sharpe ratio assuming roughly 252 trading days.
+
+    Uses the daily equivalent by scaling the sharpe_like result.
+    For irregular paper trade intervals, we approximate by sqrt(252).
+    """
+
+    base = sharpe_like(returns)
+    return base * math.sqrt(252)
+
+
 def max_drawdown(series: list[float]) -> float:
     """Compute max drawdown over an equity curve."""
 
@@ -66,3 +77,39 @@ def max_drawdown(series: list[float]) -> float:
         drawdown = (peak - value) / peak if peak else 0.0
         max_dd = max(max_dd, drawdown)
     return max_dd
+
+
+def max_drawdown_duration(series: list[float]) -> float:
+    """Compute the longest drawdown period in number of data points.
+
+    Returns the number of consecutive points from peak to recovery.
+    If never recovered, returns the duration from last peak to end.
+    """
+
+    if not series:
+        return 0.0
+    peak = series[0]
+    peak_index = 0
+    max_duration = 0
+    current_drawdown_start = -1
+
+    for i, value in enumerate(series):
+        if value >= peak:
+            peak = value
+            peak_index = i
+            current_drawdown_start = -1
+        else:
+            if current_drawdown_start == -1:
+                current_drawdown_start = peak_index
+            duration = i - current_drawdown_start
+            max_duration = max(max_duration, duration)
+
+    return float(max_duration)
+
+
+def profit_factor(gross_profit: float, gross_loss: float) -> float:
+    """Calculate profit factor (gross profit / gross loss)."""
+
+    if gross_loss == 0.0:
+        return gross_profit if gross_profit > 0 else 0.0
+    return round(gross_profit / abs(gross_loss), 4)

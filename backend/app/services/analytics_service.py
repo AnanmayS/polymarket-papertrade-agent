@@ -10,8 +10,19 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.models.market import Market
 from app.repositories.trade_repository import TradeRepository
-from app.schemas.portfolio import EquityPoint, MarketPerformance, PortfolioRead
-from app.utils.math import max_drawdown, sharpe_like
+from app.schemas.portfolio import (
+    CategoryPerformance,
+    EquityPoint,
+    MarketPerformance,
+    PortfolioRead,
+)
+from app.utils.math import (
+    max_drawdown,
+    max_drawdown_duration,
+    profit_factor,
+    sharpe_annualized,
+    sharpe_like,
+)
 
 
 class AnalyticsService:
@@ -37,8 +48,18 @@ class AnalyticsService:
             if trade.stake > 0 and trade.status == "settled"
         ]
         wins = [trade for trade in trades if trade.status == "settled" and trade.realized_pnl > 0]
+        losses = [trade for trade in trades if trade.status == "settled" and trade.realized_pnl <= 0]
         settled = [trade for trade in trades if trade.status == "settled"]
         average_edge = sum(trade.entry_edge for trade in trades) / len(trades) if trades else 0.0
+
+        # New metrics
+        avg_return_per_trade = (
+            sum(trade.realized_pnl for trade in settled) / len(settled) if settled else 0.0
+        )
+        gross_profit = sum(trade.realized_pnl for trade in wins)
+        gross_loss = sum(trade.realized_pnl for trade in losses)
+        pf = profit_factor(gross_profit, abs(gross_loss))
+        sar = sharpe_annualized(trade_returns)
 
         snapshots = list(reversed(self.trade_repo.list_portfolio_snapshots(limit=200)))
         if not snapshots:
@@ -66,8 +87,16 @@ class AnalyticsService:
             )
             for snapshot in snapshots
         ]
-        drawdown = max_drawdown([point.bankroll for point in equity_curve])
+        bankroll_series = [point.bankroll for point in equity_curve]
+        dd = max_drawdown(bankroll_series)
+        dd_duration_hours = max_drawdown_duration(bankroll_series)
+        # Convert snapshot-interval units to hours (roughly snapshot interval * count)
+        snapshot_interval_hours = (
+            self.settings.agent_cycle_interval_seconds / 3600 if snapshots else 1.0
+        )
+        dd_duration_hours = dd_duration_hours * snapshot_interval_hours
 
+        # Per-market breakdown
         by_market: defaultdict[int, dict] = defaultdict(
             lambda: {"label": "", "realized_pnl": 0.0, "wins": 0, "trades": 0}
         )
@@ -95,6 +124,40 @@ class AnalyticsService:
         ]
         per_market = sorted(per_market, key=lambda item: item.realized_pnl, reverse=True)
 
+        # Per-category breakdown
+        by_category: defaultdict[str, dict] = defaultdict(
+            lambda: {"realized_pnl": 0.0, "trades": 0, "wins": 0}
+        )
+        for trade in settled:
+            m = market_map.get(trade.market_id)
+            cat = m.category if m else "unknown"
+            bucket = by_category[cat]
+            bucket["realized_pnl"] += trade.realized_pnl
+            bucket["trades"] += 1
+            if trade.realized_pnl > 0:
+                bucket["wins"] += 1
+
+        per_category = [
+            CategoryPerformance(
+                category=cat,
+                realized_pnl=round(values["realized_pnl"], 2),
+                trades=values["trades"],
+                wins=values["wins"],
+                losses=values["trades"] - values["wins"],
+                win_rate=round(values["wins"] / values["trades"], 4) if values["trades"] else 0.0,
+            )
+            for cat, values in sorted(by_category.items())
+        ]
+
+        # Drawdown series for chart overlay
+        drawdown_series = []
+        if bankroll_series:
+            peak = bankroll_series[0]
+            for value in bankroll_series:
+                peak = max(peak, value)
+                d = (peak - value) / peak if peak else 0.0
+                drawdown_series.append(round(d, 4))
+
         # pandas keeps the portfolio analytics logic concise and easy to inspect.
         if settled:
             _ = pd.DataFrame(
@@ -111,10 +174,16 @@ class AnalyticsService:
             win_rate=round(len(wins) / len(settled), 4) if settled else 0.0,
             average_edge=round(average_edge, 4),
             sharpe_like=round(sharpe_like(trade_returns), 4),
-            max_drawdown=round(drawdown, 4),
+            sharpe_annualized=round(sar, 4),
+            max_drawdown=round(dd, 4),
+            max_drawdown_duration_hours=round(dd_duration_hours, 2),
+            avg_return_per_trade=round(avg_return_per_trade, 2),
+            profit_factor=pf,
             open_positions=open_positions,
             equity_curve=equity_curve,
             per_market=per_market,
+            per_category=per_category,
+            drawdown_series=drawdown_series,
         )
 
     def persist_snapshot(self) -> None:
