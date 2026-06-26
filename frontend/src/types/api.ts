@@ -95,6 +95,15 @@ export type MarketPerformance = {
   win_rate: number;
 };
 
+export type CategoryPerformance = {
+  category: string;
+  realized_pnl: number;
+  trades: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+};
+
 export type Portfolio = {
   bankroll: number;
   cash: number;
@@ -105,10 +114,16 @@ export type Portfolio = {
   win_rate: number;
   average_edge: number;
   sharpe_like: number;
+  sharpe_annualized: number;
   max_drawdown: number;
+  max_drawdown_duration_hours: number;
+  avg_return_per_trade: number;
+  profit_factor: number;
   open_positions: Position[];
   equity_curve: EquityPoint[];
   per_market: MarketPerformance[];
+  per_category: CategoryPerformance[];
+  drawdown_series: number[];
 };
 
 export type Postmortem = {
