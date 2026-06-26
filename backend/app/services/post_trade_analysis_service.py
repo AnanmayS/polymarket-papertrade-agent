@@ -182,7 +182,7 @@ class PostTradeAnalysisService:
             if trade.side == "buy_yes":
                 adverse = trade.exit_price < trade.fill_price
             else:
-                adverse = trade.exit_price > (1 - trade.fill_price)
+                adverse = trade.exit_price < trade.fill_price
             if adverse:
                 adverse_losses += 1
             else:
