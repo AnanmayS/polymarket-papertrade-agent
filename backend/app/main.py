@@ -15,6 +15,7 @@ from app.api.routes.postmortems import router as postmortems_router
 from app.api.routes.signals import router as signals_router
 from app.api.routes.system import router as system_router
 from app.api.routes.trades import router as trades_router
+from app.api.routes.analysis import router as analysis_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.session import build_session_factory, init_database
@@ -100,6 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(trades_router)
     app.include_router(postmortems_router)
     app.include_router(engine_router)
+    app.include_router(analysis_router)
     return app
 
 

@@ -102,6 +102,8 @@ export const api = {
   trades: () => fetchJson<import("../types/api").Trade[]>("/trades"),
   postmortems: () => fetchJson<import("../types/api").Postmortem[]>("/postmortems"),
   settings: () => fetchJson<import("../types/api").RiskSettings>("/settings"),
+  analysis: () => fetchJson<import("../types/api").AnalysisResult>("/analysis/all"),
+  exportCsv: () => `${BASE_URL}/analysis/export-csv`,
   runCycle: () =>
     import.meta.env.PROD
       ? fetchSameOriginJson<{ status?: string; message?: string; notes?: string[] } | null>(

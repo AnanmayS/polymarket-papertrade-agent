@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./layouts/AppShell";
+import { AnalysisPage } from "./pages/AnalysisPage";
 import { CandidatesPage } from "./pages/CandidatesPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
 import { PostmortemsPage } from "./pages/PostmortemsPage";
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="markets" element={<ScannerPage />} />
         <Route path="ideas" element={<CandidatesPage />} />
         <Route path="trades" element={<TradesPage />} />
+        <Route path="analysis" element={<AnalysisPage />} />
         <Route path="reviews" element={<PostmortemsPage />} />
         <Route path="rules" element={<SettingsPage />} />
 
