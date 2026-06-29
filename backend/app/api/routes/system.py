@@ -43,3 +43,41 @@ def get_settings_snapshot(settings: Settings = Depends(get_app_settings)) -> Set
         fractional_kelly=settings.fractional_kelly,
         default_signal_mode=settings.default_signal_mode,
     )
+
+
+@router.post("/reset")
+def reset_portfolio(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_app_settings),
+) -> dict:
+    """Wipe all trades, positions, snapshots, postmortems, signals, and markets."""
+    from app.models.trade import Trade, Position
+    from app.models.portfolio import PortfolioSnapshot
+    from app.models.postmortem import Postmortem
+    from app.models.signal import Signal
+    from app.models.market import Market
+
+    for model in [Trade, Position, PortfolioSnapshot, Postmortem, Signal, Market]:
+        db.query(model).delete()
+    db.commit()
+
+    # Create a clean initial snapshot at $1000
+    from app.repositories.trade_repository import TradeRepository
+    TradeRepository(db).create_portfolio_snapshot({
+        "bankroll": settings.initial_bankroll,
+        "cash": settings.initial_bankroll,
+        "realized_pnl": 0.0,
+        "unrealized_pnl": 0.0,
+        "open_exposure": 0.0,
+        "win_rate": 0.0,
+        "sharpe_like": 0.0,
+        "max_drawdown": 0.0,
+    })
+    db.commit()
+
+    return {
+        "message": "Portfolio reset complete",
+        "initial_bankroll": settings.initial_bankroll,
+        "cash": settings.initial_bankroll,
+        "open_positions": 0,
+    }
