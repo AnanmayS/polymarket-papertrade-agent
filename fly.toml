@@ -1,0 +1,43 @@
+# fly.toml app configuration file generated for polymarket-paper-backend on 2026-06-27T10:48:14+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'polymarket-paper-backend'
+primary_region = 'ord'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  APP_ENV = 'production'
+  AUTO_RUN_ON_STARTUP = 'false'
+  DATABASE_URL = 'sqlite:////data/demo.db'
+  INITIAL_BANKROLL = '1000'
+  SCHEDULER_ENABLED = 'false'
+  SEED_DEMO_DATA = 'false'
+  SENTIMENT_ENABLED = 'true'
+  USE_LIVE_POLYMARKET_DATA = 'true'
+
+[[mounts]]
+  source = 'polymarket_data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
